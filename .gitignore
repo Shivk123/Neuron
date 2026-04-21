@@ -1,0 +1,41 @@
+# Dependencies and generated application output
+node_modules/
+dist/
+release/
+coverage/
+out/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+
+# Logs, caches, and OS/editor state
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.vite/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Agent, model, and local automation state
+.agents/
+.codex/
+.claude/
+.impeccable/
+skills-lock.json
+tools/agent-*
+tools/qa-*
+tools/tmp-*
+
+# Local QA captures and scratch content
+*-preview.png
+*-screenshot.png
+notes/
