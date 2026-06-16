@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Download Neuron, a local-first Markdown and MDX knowledge workspace." />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <title>Neuron — local notes, fully yours</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg-canvas: #070809;
+        --bg-surface: #0f1113;
+        --bg-surface-hover: #16191c;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --border-color-muted: rgba(255, 255, 255, 0.04);
+        --text-primary: #f2f4f3;
+        --text-secondary: #b6bcb9;
+        --text-muted: #727976;
+        --accent: #91d59d;
+        --accent-rgb: 145, 213, 157;
+        --accent-ink: #0c180f;
+        --transition-duration: 600ms;
+        --transition-bezier: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Glow Mesh Backdrops */
+      .glow-container {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 1400px;
+        height: 800px;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .glow-orb-primary {
+        position: absolute;
+        top: -100px;
+        left: 10%;
+        width: 600px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0) 70%);
+        filter: blur(80px);
+      }
+
+      .glow-orb-secondary {
+        position: absolute;
+        top: 150px;
+        right: 5%;
+        width: 500px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(145, 185, 213, 0.08) 0%, rgba(145, 185, 213, 0) 75%);
+        filter: blur(60px);
+      }
+
+      /* Base Layout Container */
+      .shell {
+        position: relative;
+        z-index: 1;
+        width: min(1200px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      /* Floating Header */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 24px auto 0;
+        padding: 10px 24px;
+        height: 64px;
+        background: rgba(15, 17, 19, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-color);
+        border-radius: 9999px;
+        box-shadow: 
+          0 4px 30px rgba(0, 0, 0, 0.2), 
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: opacity var(--transition-duration) var(--transition-bezier);
+      }
+
+      .brand:hover {
+        opacity: 0.85;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-surface);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .brand-mark img {
+        width: 20px;
+        height: 20px;
+      }
+
+      nav {
+        display: flex;
+        gap: 20px;
+      }
+
+      nav a {
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        color: var(--text-secondary);
+        transition: color 200ms ease, transform 200ms ease;
+      }
+
+      nav a:hover {
+        color: var(--text-primary);
+        transform: translateY(-1px);
+      }
+
+      /* Hero Section */
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 48px;
+        align-items: center;
+        padding: 96px 0 80px;
+      }
+
+      .hero-content {
+        max-width: 620px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 4px 12px;
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
+        border-radius: 9999px;
+        background: rgba(var(--accent-rgb), 0.05);
+        color: var(--accent);
+        font-family: 'Geist Mono', monospace;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+      }
+
+      h1 {
+        margin: 0 0 20px;
+        font-size: clamp(38px, 5vw, 56px);
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      h1 span {
+        color: var(--accent);
+        font-style: italic;
+        font-weight: 700;
+      }
+
+      .lede {
+        margin: 0 0 36px;
+        color: var(--text-secondary);
+        font-size: 17px;
+        line-height: 1.6;
+        text-wrap: pretty;
+      }
+
+      /* Buttons & CTA */
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 24px;
+        border-radius: 9999px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 300ms var(--transition-bezier);
+        cursor: pointer;
+        position: relative;
+      }
+
+      .button.primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 1px solid var(--accent);
+        padding-right: 8px; /* Room for nested button icon */
+      }
+
+      .button.primary:hover {
+        background: #aef0ba;
+        border-color: #aef0ba;
+        box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
+        transform: translateY(-2px);
+      }
+
+      .button.primary:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      .btn-icon-circle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        margin-left: 14px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.15);
+        color: var(--accent-ink);
+        transition: transform 300ms var(--transition-bezier);
+      }
+
+      .button.primary:hover .btn-icon-circle {
+        transform: translateY(2px);
+      }
+
+      .btn-icon-circle svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .button.secondary {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
+
+      .button.secondary:hover {
+        background: var(--bg-surface-hover);
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+      }
+
+      .button.secondary:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      .note-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        max-width: 480px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-color-muted);
+        border-radius: 12px;
+        background: rgba(15, 17, 19, 0.3);
+      }
+
+      .note-card svg {
+        width: 16px;
+        height: 16px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .note-text {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      /* Mockup Window - Double Bezel Structure */
+      .mockup-wrapper {
+        position: relative;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 8px;
+        box-shadow: 
+          0 30px 60px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .mockup-container {
+        display: flex;
+        flex-direction: column;
+        height: 380px;
+        background: #090a0b;
+        border: 1px solid var(--border-color-muted);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      }
+
+      .mockup-titlebar {
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 16px;
+        background: #0f1113;
+        border-bottom: 1px solid var(--border-color-muted);
+      }
+
+      .mockup-dots {
+        display: flex;
+        gap: 6px;
+      }
+
+      .mockup-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--border-color);
+      }
+
+      .mockup-dot:nth-child(1) { background: #ff5f56; }
+      .mockup-dot:nth-child(2) { background: #ffbd2e; }
+      .mockup-dot:nth-child(3) { background: #27c93f; }
+
+      .mockup-title {
+        margin: 0 auto;
+        font-family: 'Geist Mono', monospace;
+        font-size: 11px;
+        color: var(--text-muted);
+        transform: translateX(-15px); /* balance out dots offset */
+      }
+
+      .mockup-body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .mockup-sidebar {
+        width: 140px;
+        background: #0c0e0f;
+        border-right: 1px solid var(--border-color-muted);
+        padding: 16px 12px;
+      }
+
+      .mockup-tree-title {
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.1em;
+        margin-bottom: 12px;
+      }
+
+      .mockup-tree-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        font-family: 'Geist Mono', monospace;
+      }
+
+      .mockup-tree-item.active {
+        color: var(--accent);
+      }
+
+      .mockup-tree-icon {
+        width: 12px;
+        height: 12px;
+        opacity: 0.6;
+      }
+
+      .mockup-editor {
+        flex: 1;
+        padding: 20px;
+        font-family: 'Geist Mono', monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        overflow-y: auto;
+      }
+
+      .editor-line-num {
+        color: var(--text-muted);
+        margin-right: 12px;
+        user-select: none;
+      }
+
+      .editor-keyword { color: #f28b82; }
+      .editor-string { color: #aef0ba; }
+      .editor-header { color: var(--accent); font-weight: 600; }
+      .editor-tag { color: #81c995; }
+
+      /* Bento Features Grid */
+      .bento-section {
+        padding: 80px 0 120px;
+      }
+
+      .section-header {
+        max-width: 600px;
+        margin-bottom: 56px;
+      }
+
+      .section-header h2 {
+        font-size: clamp(28px, 4vw, 38px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      /* Bento Cells using Double Bezel */
+      .bento-cell {
+        position: relative;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 6px;
+        box-shadow: 
+          0 10px 30px rgba(0, 0, 0, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        display: flex;
+        flex-direction: column;
+        transition: transform 300ms var(--transition-bezier);
+      }
+
+      .bento-cell:hover {
+        transform: translateY(-2px);
+      }
+
+      .bento-inner {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color-muted);
+        border-radius: 14px;
+        padding: 28px;
+        overflow: hidden;
+      }
+
+      .bento-cell.span-2 {
+        grid-column: span 2;
+      }
+
+      .bento-cell.span-3 {
+        grid-column: span 3;
+      }
+
+      .bento-inner h3 {
+        margin: 0 0 12px;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+
+      .bento-inner p {
+        margin: 0 0 24px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      /* Bento Visual Content */
+      .bento-visual {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border-color-muted);
+        border-radius: 8px;
+        padding: 16px;
+        flex: 1;
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* File tree visual */
+      .tree-visual {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        max-width: 280px;
+        font-family: 'Geist Mono', monospace;
+        font-size: 11px;
+      }
+
+      .tree-visual-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color-muted);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.01);
+      }
+
+      .tree-visual-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tree-visual-status {
+        font-size: 9px;
+        color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* Features list visual */
+      .feature-list-visual {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .feature-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .feature-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 8px var(--accent);
+      }
+
+      /* Terminal visual */
+      .bento-split-content {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 36px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .terminal-visual {
+        display: flex;
+        flex-direction: column;
+        height: 180px;
+        background: #050607;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+      }
+
+      .terminal-header {
+        display: flex;
+        align-items: center;
+        height: 28px;
+        padding: 0 12px;
+        background: #0b0c0d;
+        border-bottom: 1px solid var(--border-color-muted);
+      }
+
+      .terminal-title {
+        font-family: 'Geist Mono', monospace;
+        font-size: 9px;
+        color: var(--text-muted);
+      }
+
+      .terminal-body {
+        flex: 1;
+        padding: 12px;
+        font-family: 'Geist Mono', monospace;
+        font-size: 11px;
+        color: #aef0ba;
+        overflow-y: auto;
+        line-height: 1.5;
+      }
+
+      .terminal-line {
+        margin-bottom: 4px;
+        display: flex;
+        gap: 6px;
+      }
+
+      .terminal-prompt {
+        color: var(--text-muted);
+        user-select: none;
+      }
+
+      .terminal-output {
+        color: var(--text-secondary);
+      }
+
+      /* Footer */
+      footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        padding: 40px 0 60px;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+
+      footer a {
+        text-decoration: none;
+        color: var(--text-secondary);
+        transition: color 200ms ease;
+      }
+
+      footer a:hover {
+        color: var(--text-primary);
+      }
+
+      /* Scroll Entry Animations classes */
+      .reveal {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+        transition: opacity var(--transition-duration) var(--transition-bezier), 
+                    transform var(--transition-duration) var(--transition-bezier);
+        will-change: opacity, transform;
+      }
+
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      /* Responsive rules */
+      @media (max-width: 900px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 40px;
+          padding: 60px 0;
+        }
+
+        .hero-content {
+          max-width: 100%;
+        }
+
+        .mockup-wrapper {
+          max-width: 500px;
+          margin: 0 auto;
+        }
+
+        .bento-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bento-cell.span-2,
+        .bento-cell.span-3 {
+          grid-column: span 1;
+        }
+
+        .bento-split-content {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+      }
+
+      @media (max-width: 500px) {
+        header {
+          padding: 10px 16px;
+        }
+        
+        nav {
+          gap: 12px;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        footer {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .reveal {
+          opacity: 1 !important;
+          transform: none !important;
+          transition: none !important;
+        }
+        .button {
+          transition: none !important;
+        }
+        .bento-cell {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Glow Orbs background -->
+    <div class="glow-container">
+      <div class="glow-orb-primary"></div>
+      <div class="glow-orb-secondary"></div>
+    </div>
+
+    <div class="shell">
+      <header class="reveal">
+        <a class="brand" data-repository href="#" aria-label="Neuron repository">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="./icon.svg" alt="" />
+          </span>
+          Neuron
+        </a>
+        <nav aria-label="Project links">
+          <a data-repository href="#">Source</a>
+          <a data-issues href="#">Issues</a>
+          <a data-docs href="#">Docs</a>
+        </nav>
+      </header>
+
+      <main>
+        <!-- Hero Section -->
+        <section class="hero-grid" aria-labelledby="hero-title">
+          <div class="hero-content reveal">
+            <div class="eyebrow">Local-first Workspace</div>
+            <h1 id="hero-title">Your notes stay files.<br>Your workspace gets <span>smarter</span>.</h1>
+            <p class="lede">Neuron is a local-first Markdown and MDX workspace with live preview, linked-note navigation, extensible plugin panels, and an integrated terminal.</p>
+            <div class="actions">
+              <a class="button primary" data-latest href="#">
+                Download latest release
+                <span class="btn-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                </span>
+              </a>
+              <a class="button secondary" data-repository href="#">View source</a>
+            </div>
+            
+            <div class="note-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <p class="note-text">Open source under MIT. Current builds are unsigned and may trigger operating-system security warnings during installation.</p>
+            </div>
+          </div>
+
+          <!-- Mockup Window (Double Bezel) -->
+          <div class="mockup-wrapper reveal">
+            <div class="mockup-container">
+              <div class="mockup-titlebar">
+                <div class="mockup-dots">
+                  <div class="mockup-dot"></div>
+                  <div class="mockup-dot"></div>
+                  <div class="mockup-dot"></div>
+                </div>
+                <div class="mockup-title">~/notes/features.mdx</div>
+              </div>
+              <div class="mockup-body">
+                <div class="mockup-sidebar">
+                  <div class="mockup-tree-title">Workspace</div>
+                  <div class="mockup-tree-item active">
+                    <svg class="mockup-tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    features.mdx
+                  </div>
+                  <div class="mockup-tree-item">
+                    <svg class="mockup-tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    design.md
+                  </div>
+                  <div class="mockup-tree-item">
+                    <svg class="mockup-tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 10.07 4H14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><path d="M3 9v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9H3z"/></svg>
+                    plugins/
+                  </div>
+                </div>
+                <div class="mockup-editor">
+                  <div><span class="editor-line-num">1</span><span class="editor-header"># Core Philosophy</span></div>
+                  <div><span class="editor-line-num">2</span></div>
+                  <div><span class="editor-line-num">3</span>Neuron is designed around raw text.</div>
+                  <div><span class="editor-line-num">4</span>No proprietary database, no lock-in.</div>
+                  <div><span class="editor-line-num">5</span></div>
+                  <div><span class="editor-line-num">6</span><span class="editor-header">## Live MDX Preview</span></div>
+                  <div><span class="editor-line-num">7</span></div>
+                  <div><span class="editor-line-num">8</span><span class="editor-tag">&lt;InteractiveDashboard&gt;</span></div>
+                  <div><span class="editor-line-num">9</span>  <span class="editor-keyword">const</span> data = <span class="editor-string">"Realtime Preview"</span>;</div>
+                  <div><span class="editor-line-num">10</span><span class="editor-tag">&lt;/InteractiveDashboard&gt;</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Features Bento Grid -->
+        <section class="bento-section" aria-label="Highlights">
+          <div class="section-header reveal">
+            <h2>Engineered for local control, built for high performance.</h2>
+          </div>
+          
+          <div class="bento-grid">
+            <!-- Feature 1 (Local by construction) - span-2 -->
+            <div class="bento-cell span-2 reveal">
+              <div class="bento-inner">
+                <div>
+                  <h3>Local by construction</h3>
+                  <p>Repositories are ordinary folders. Sync them with the service you already trust, move them freely, or keep them entirely offline.</p>
+                </div>
+                <div class="bento-visual">
+                  <div class="tree-visual">
+                    <div class="tree-visual-item">
+                      <div class="tree-visual-left">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 10.07 4H14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><path d="M3 9v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9H3z"/></svg>
+                        <span>~/MyWorkspace</span>
+                      </div>
+                      <span class="tree-visual-status">Local File System</span>
+                    </div>
+                    <div style="margin-left: 20px;" class="tree-visual-item">
+                      <div class="tree-visual-left">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                        <span>Sync via Git</span>
+                      </div>
+                      <span style="background: rgba(145,185,213,0.1); color: #91b9d5;" class="tree-visual-status">Remote Sync</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature 2 (Built for long-form work) -->
+            <div class="bento-cell reveal">
+              <div class="bento-inner">
+                <div>
+                  <h3>Built for long-form work</h3>
+                  <p>Markdown editing, tab groups, backlinks, and graph navigation in a single workspace.</p>
+                </div>
+                <div class="bento-visual">
+                  <div class="feature-list-visual">
+                    <div class="feature-badge">
+                      <div class="feature-badge-dot"></div>
+                      Live MDX Preview
+                    </div>
+                    <div class="feature-badge">
+                      <div class="feature-badge-dot"></div>
+                      Backlinks & Graph Links
+                    </div>
+                    <div class="feature-badge">
+                      <div class="feature-badge-dot"></div>
+                      Workspace Tabs
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature 3 (Extensible where it matters) - span-3 -->
+            <div class="bento-cell span-3 reveal">
+              <div class="bento-inner">
+                <div class="bento-split-content">
+                  <div>
+                    <h3>Extensible where it matters</h3>
+                    <p>Plugins can contribute custom commands, interactive MDX components, right-side inspectors, and bottom panels such as terminal shells and code diagnostics.</p>
+                  </div>
+                  <div class="terminal-visual">
+                    <div class="terminal-header">
+                      <div class="terminal-title">neuron-terminal (zsh)</div>
+                    </div>
+                    <div class="terminal-body">
+                      <div class="terminal-line">
+                        <span class="terminal-prompt">$</span>
+                        <span class="terminal-output">neuron plugins list</span>
+                      </div>
+                      <div class="terminal-line">
+                        <span class="terminal-output" style="color: var(--accent);">✔ Found 3 active plugins</span>
+                      </div>
+                      <div class="terminal-line">
+                        <span class="terminal-output" style="color: var(--text-muted);">- math-renderer [loaded]</span>
+                      </div>
+                      <div class="terminal-line">
+                        <span class="terminal-output" style="color: var(--text-muted);">- git-integration [loaded]</span>
+                      </div>
+                      <div class="terminal-line">
+                        <span class="terminal-prompt">$</span>
+                        <span class="terminal-output">_</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="reveal">
+        <span>Neuron · Local-first knowledge workspace</span>
+        <a data-repository href="#">MIT licensed on GitHub</a>
+      </footer>
+    </div>
+
+    <!-- Scroll Reveal script -->
+    <script>
+      const revealElements = document.querySelectorAll('.reveal');
+      
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            revealObserver.unobserve(entry.target); // Reveal only once
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+      });
+
+      revealElements.forEach(el => revealObserver.observe(el));
+    </script>
+
+    <!-- Dynamic Repository resolving script -->
+    <script>
+      const owner = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'OWNER';
+      const repository = location.pathname.split('/').filter(Boolean)[0] || 'Neuron';
+      const base = owner === 'OWNER' ? 'https://github.com/OWNER/Neuron' : `https://github.com/${owner}/${repository}`;
+      document.querySelectorAll('[data-repository]').forEach((link) => { link.href = base; });
+      document.querySelectorAll('[data-issues]').forEach((link) => { link.href = `${base}/issues`; });
+      document.querySelectorAll('[data-latest]').forEach((link) => { link.href = `${base}/releases/latest`; });
+      document.querySelectorAll('[data-docs]').forEach((link) => { link.href = `${base}#readme`; });
+    </script>
+  </body>
+</html>
